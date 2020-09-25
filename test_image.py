@@ -73,7 +73,7 @@ def create_dataset(input_dir,num_examples=-1,num_options=4):
 def create_text_embeddings(bert_model,options_ids):
     bert_model.eval()
 
-    num_options=options_ids.size()[0]
+    num_options=options_ids.size(0)
 
     ret=torch.empty(num_options,512,768).to(device)
 
@@ -91,6 +91,7 @@ def create_text_embeddings(bert_model,options_ids):
 def create_option_embedding(text_embedding,im_embedding):
     im_embedding_length=im_embedding.size(0)
     text_embedding=text_embedding[:512-im_embedding_length]
+    text_embedding[-1]=3    #[SEP]
     option_embedding=torch.cat([text_embedding,im_embedding],dim=0)
 
     token_type_ids=torch.zeros(512,dtype=torch.long).to(device)
@@ -100,8 +101,8 @@ def create_option_embedding(text_embedding,im_embedding):
     return option_embedding,token_type_ids
 
 def create_inputs_embeds_and_token_type_ids(bert_model,input_ids,indices,options,im_embeddings_dir):
-    batch_size=input_ids.size()[0]
-    num_options=input_ids.size()[1]
+    batch_size=input_ids.size(0)
+    num_options=input_ids.size(1)
 
     inputs_embeds=torch.empty(batch_size,num_options,512,768).to(device)
     inputs_token_type_ids=torch.empty(batch_size,num_options,512,dtype=torch.long).to(device)
@@ -119,11 +120,7 @@ def create_inputs_embeds_and_token_type_ids(bert_model,input_ids,indices,options
             im_features_filepath=os.path.join(im_embeddings_dir,article_hash+".pt")
 
             if os.path.exists(im_features_filepath):
-                if torch.cuda.is_available():
-                    im_embedding=torch.load(im_features_filepath).to(device)
-                else:
-                    im_embedding=torch.load(im_features_filepath,map_location=torch.device("cpu")).to(device)
-
+                im_embedding=torch.load(im_features_filepath,map_location=device).to(device)
                 option_embedding,inputs_token_type_ids_tmp=create_option_embedding(text_embeddings[j],im_embedding)
             else:
                 option_embedding=text_embeddings[j]
