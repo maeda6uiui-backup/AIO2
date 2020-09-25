@@ -43,42 +43,6 @@ def create_dataset(input_dir,num_examples=-1,num_options=4):
 
     return TensorDataset(input_ids,attention_mask,token_type_ids,labels)
 
-def create_pooled_text_embeddings(bert_model,batch_inputs):
-    bert_model.eval()
-    num_options=batch_inputs["input_ids"].size(0)
-    ret=torch.empty(num_options,768).to(device)
-
-    for i in range(num_options):
-        option_inputs={
-            "input_ids":batch_inputs["input_ids"][i].unsqueeze(0),
-            "attention_mask":batch_inputs["attention_mask"][i].unsqueeze(0),
-            "token_type_ids":batch_inputs["token_type_ids"][i].unsqueeze(0),
-        }
-
-        with torch.no_grad():
-            outputs=bert_model(**option_inputs)
-            ret[i]=outputs[1][0]
-
-    return ret
-
-def create_text_embeddings(bert_model,batch_inputs):
-    bert_model.eval()
-    num_options=batch_inputs["input_ids"].size(0)
-    ret=torch.empty(num_options,512,768).to(device)
-
-    for i in range(num_options):
-        option_inputs={
-            "input_ids":batch_inputs["input_ids"][i].unsqueeze(0),
-            "attention_mask":batch_inputs["attention_mask"][i].unsqueeze(0),
-            "token_type_ids":batch_inputs["token_type_ids"][i].unsqueeze(0),
-        }
-
-        with torch.no_grad():
-            outputs=bert_model(**option_inputs)
-            ret[i]=outputs[0][0]
-
-    return ret
-
 def train(classifier_model,optimizer,scheduler,dataloader):
     classifier_model.train()
 
