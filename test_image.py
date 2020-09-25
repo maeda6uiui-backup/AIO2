@@ -58,6 +58,10 @@ def create_dataset(input_dir,num_examples=-1,num_options=4):
     token_type_ids=torch.load(os.path.join(input_dir,"token_type_ids.pt"))
     labels=torch.load(os.path.join(input_dir,"labels.pt"))
 
+    indices=torch.empty(input_ids.size(0),dtype=torch.long)
+    for i in range(input_ids.size(0)):
+        indices[i]=i
+
     input_ids=input_ids[:,:num_options,:]
     attention_mask=attention_mask[:,:num_options,:]
     token_type_ids=token_type_ids[:,:num_options,:]
@@ -67,8 +71,9 @@ def create_dataset(input_dir,num_examples=-1,num_options=4):
         attention_mask=attention_mask[:num_examples,:,:]
         token_type_ids=token_type_ids[:num_examples,:,:]
         labels=labels[:num_examples]
+        indices=indices[:num_examples]
 
-    return TensorDataset(input_ids,attention_mask,token_type_ids,labels)
+    return TensorDataset(indices,input_ids,attention_mask,token_type_ids,labels)
 
 def create_text_embeddings(bert_model,options_ids):
     bert_model.eval()
