@@ -153,9 +153,11 @@ def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,result_save_dir
     logger.info("batch_size: {} num_epochs: {} lr: {}".format(batch_size,num_epochs,lr))
 
     #Create dataloaders.
+    logger.info("Create train dataloader from {}.".format(train_input_dir))
     train_dataset=create_dataset(train_input_dir,num_examples=-1,num_options=4)
     train_dataloader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True,drop_last=True)
 
+    logger.info("Create dev1 dataloader from {}.".format(dev1_input_dir))
     dev1_dataset=create_dataset(dev1_input_dir,num_examples=-1,num_options=20)
     dev1_dataloader=DataLoader(dev1_dataset,batch_size=4,shuffle=False,drop_last=True)
 
