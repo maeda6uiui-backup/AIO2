@@ -215,6 +215,7 @@ def main(test_input_dir,im_embeddings_dir,test_upper_bound,result_save_dir):
     bfmc_model.to(device)
 
     #Create a directory to save the results in.
+    logger.info("Results will be saved in {}.".format(result_save_dir))
     os.makedirs(result_save_dir,exist_ok=True)
 
     logger.info("Start test.")
