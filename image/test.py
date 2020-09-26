@@ -194,7 +194,7 @@ def evaluate(bert_model,bfmc_model,options,im_embeddings_dir,dataloader):
 
     return pred_labels,correct_labels,accuracy
 
-def main(test_input_dir,im_embeddings_dir,test_upper_bound,result_save_dir):
+def main(test_input_dir,im_embeddings_dir,model_dir,test_upper_bound,result_save_dir):
     #Load a list of options.
     logger.info("Load a list of options.")
     test_options=load_options_list(os.path.join(test_input_dir,"options_list.txt"))
@@ -220,7 +220,7 @@ def main(test_input_dir,im_embeddings_dir,test_upper_bound,result_save_dir):
 
     logger.info("Start test.")
     for i in range(test_upper_bound):
-        model_filepath=os.path.join(result_save_dir,"checkpoint_{}.pt".format(i+1))
+        model_filepath=os.path.join(model_dir,"checkpoint_{}.pt".format(i+1))
         logger.info("Load model parameters from {}.".format(model_filepath))
 
         parameters=torch.load(model_filepath,map_location=device)
@@ -247,6 +247,7 @@ if __name__=="__main__":
 
     parser.add_argument("--test_input_dir",type=str,default="~/EncodedTextTohoku/Dev2")
     parser.add_argument("--im_embeddings_dir",type=str,default="~/VGG16Embeddings")
+    parser.add_argument("--model_dir",type=str,default="./OutputDir/ImageBERT")
     parser.add_argument("--test_upper_bound",type=int,default=20)
     parser.add_argument("--result_save_dir",type=str,default="./OutputDir/ImageBERT")
 
@@ -255,6 +256,7 @@ if __name__=="__main__":
     main(
         args.test_input_dir,
         args.im_embeddings_dir,
+        args.model_dir,
         args.test_upper_bound,
         args.result_save_dir
     )
