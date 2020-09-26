@@ -215,19 +215,17 @@ def main(test_input_dir,im_embeddings_dir,test_upper_bound,result_save_dir):
     bfmc_model.to(device)
 
     #Create a directory to save the results in.
-    #os.makedirs(result_save_dir,exist_ok=True)
+    os.makedirs(result_save_dir,exist_ok=True)
 
     logger.info("Start test.")
     for i in range(test_upper_bound):
-        parameters_filepath=os.path.join(result_save_dir,"checkpoint_{}.pt".format(i+1))
-        logger.info("Load model parameters from {}.".format(parameters_filepath))
-        if torch.cuda.is_available():
-            bfmc_model.load_state_dict(torch.load(parameters_filepath))
-        else:
-            bfmc_model.load_state_dict(torch.load(parameters_filepath,map_location=torch.device("cpu")))
+        model_filepath=os.path.join(result_save_dir,"checkpoint_{}.pt".format(i+1))
+        logger.info("Load model parameters from {}.".format(model_filepath))
+
+        parameters=torch.load(model_filepath,map_location=device)
+        bfmc_model.load_state_dict(parameters)
 
         pred_labels,correct_labels,accuracy=evaluate(bert_model,bfmc_model,test_options,im_embeddings_dir,test_dataloader)
-
         logger.info("Accuracy: {}".format(accuracy))
 
         #Save results as text files.

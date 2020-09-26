@@ -86,7 +86,7 @@ def main(test_input_dir,model_dir,test_upper_bound,result_save_dir):
     test_dataloader=DataLoader(test_dataset,batch_size=4,shuffle=False,drop_last=True)
 
     #Create a classifier model.
-    logger.info("Load model parameters from {}.".format(model_filepath))
+    logger.info("Create a classifier model.")
     classifier_model=BertForMultipleChoice.from_pretrained("cl-tohoku/bert-base-japanese-whole-word-masking")
     classifier_model.to(device)
 
@@ -95,6 +95,9 @@ def main(test_input_dir,model_dir,test_upper_bound,result_save_dir):
 
     logger.info("Start model evaluation.")
     for i in range(test_upper_bound):
+        model_filepath=os.path.join(model_dir,"checkpoint_{}.pt".format(i+1))
+        logger.info("Load model parameters from {}.".format(model_filepath))
+
         parameters=torch.load(model_filepath,map_location=device)
         classifier_model.load_state_dict(parameters)
 
