@@ -6,7 +6,11 @@ class LinearClassifier(BertForMultipleChoice):
         super().__init__(config)
 
         self.classifier=nn.Sequential(
-            nn.Linear(config.hidden_size,1)
+            nn.Linear(config.hidden_size,256),
+            nn.GELU(),
+            nn.Linear(256,256),
+            nn.GELU(),
+            nn.Linear(256,1)
         )
 
         self.init_weights()
