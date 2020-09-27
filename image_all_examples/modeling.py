@@ -9,8 +9,8 @@ import numpy as np
 from tqdm import tqdm
 from torch.utils.data import Dataset,DataLoader,TensorDataset
 from transformers import (
-    BertModel,
     BertForMultipleChoice,
+    BertModel,
     AdamW,
     get_linear_schedule_with_warmup,
 )
