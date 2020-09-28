@@ -14,6 +14,13 @@ from transformers import (
 
 import hashing
 
+#Fix the seed.
+SEED=42
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+torch.cuda.manual_seed(SEED)
+
 #Set up a logger.
 logging_fmt = "%(asctime)s %(levelname)s: %(message)s"
 logging.basicConfig(format=logging_fmt)
