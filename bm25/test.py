@@ -16,7 +16,7 @@ from transformers import BertForMultipleChoice,AdamW,get_linear_schedule_with_wa
 import hashing
 
 #Fix the seed.
-SEED=1234
+SEED=42
 random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
@@ -101,7 +101,7 @@ def get_d_and_frequency(count_filepath,qi):
     
     return d,frequency
 
-def calc_score(mecab,question,option,count_dir,nqis,ignores,k1=1.5,b=0.75):
+def calc_score(mecab,question,option,count_dir,nqis,ignores,k1=1.6,b=0.75,delta=1.0):
     genkeis=[]
     node=mecab.parseToNode(question)
     while node:
@@ -119,10 +119,10 @@ def calc_score(mecab,question,option,count_dir,nqis,ignores,k1=1.5,b=0.75):
 
     score=0
     for genkei in genkeis:
-        if genkei not in ignores:
-            nqi=0
-            if genkei in nqis:
-                nqi=nqis[genkei]
+        nqi=0
+        #if genkei not in ignores:
+        if genkei in nqis:
+            nqi=nqis[genkei]
 
         idf=math.log((NUM_TOTAL_DOCS-nqi+0.5)/(nqi+0.5))
         idf=max(0,idf)
@@ -134,7 +134,7 @@ def calc_score(mecab,question,option,count_dir,nqis,ignores,k1=1.5,b=0.75):
         numerator=freq*(k1+1)
         denominator=freq+k1*(1-b+b*d/AVGDL)
 
-        score+=idf*numerator/denominator
+        score+=idf*(numerator/denominator+delta)
 
     return score
 
@@ -161,25 +161,24 @@ def evaluate(classifier_model,dataloader,examples,mecab,count_dir,nqis,ignores):
             logits=classifier_outputs[1]
             logits=logits.detach().cpu().numpy()
 
-            sorted_logits=np.sort(logits,axis=1)[::-1]
+            sorted_logits=np.sort(logits,axis=1)
             example_indices=batch[4].to(device)
             for i in range(batch_size):
-                if sorted_logits[0]-sorted_logits[1]<3.0:
-                    example_index=example_indices[i]
-                    example=examples[example_index]
+                example_index=example_indices[i]
+                example=examples[example_index]
 
-                    scores=np.empty(20)
-                    for j in range(20):
-                        score=calc_score(mecab,example.question,example.endings[j],count_dir,nqis,ignores)
-                        scores[j]=score
-                    
-                    logits[i]=scores
+                scores=np.empty(20)
+                for j in range(20):
+                    score=calc_score(mecab,example.question,example.endings[j],count_dir,nqis,ignores)
+                    scores[j]=score
+                
+                logits[i]*=scores
 
             if preds is None:
-                preds = logits.detach().cpu().numpy()
+                preds = logits
                 correct_labels = bert_inputs["labels"].detach().cpu().numpy()
             else:
-                preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
+                preds = np.append(preds, logits, axis=0)
                 correct_labels = np.append(
                     correct_labels, bert_inputs["labels"].detach().cpu().numpy(), axis=0
                 )
