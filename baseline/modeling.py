@@ -11,7 +11,7 @@ from torch.utils.data import Dataset,DataLoader,TensorDataset
 from transformers import BertForMultipleChoice,AdamW,get_linear_schedule_with_warmup
 
 #Fix the seed.
-SEED=1234
+SEED=42
 random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
