@@ -51,7 +51,7 @@ def count_context_words(mecab,title,context,save_dir):
     title_hash=hashing.get_md5_hash(title)
     save_filepath=os.path.join(save_dir,title_hash+".txt")
     with open(save_filepath,"w",encoding="utf_8",newline="") as w:
-        w.write(str(len(counter)))
+        w.write(len(genkeis))
         w.write("\n")
 
         for tup in counter.most_common():
