@@ -31,7 +31,7 @@ logger.setLevel(level=logging.INFO)
 device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 NUM_TOTAL_DOCS=114229
-AVGDL=395
+AVGDL=1961
 
 class InputExample(object):
     def __init__(self, qid, question, endings, label=None):
