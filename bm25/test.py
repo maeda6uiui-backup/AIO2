@@ -119,8 +119,9 @@ def calc_score(mecab,question,option,count_dir,nqis,ignores,k1=1.6,b=0.75,delta=
 
     score=0
     for genkei in genkeis:
-        nqi=0
+        idf=0
         #if genkei not in ignores:
+        nqi=0
         if genkei in nqis:
             nqi=nqis[genkei]
 
