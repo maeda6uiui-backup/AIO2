@@ -11,7 +11,7 @@ from torch.utils.data import Dataset,DataLoader,TensorDataset
 from transformers import BertForMultipleChoice,AdamW,get_linear_schedule_with_warmup
 
 #Fix the seed.
-SEED=42
+SEED=1234
 random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
@@ -80,6 +80,8 @@ def evaluate(classifier_model,dataloader):
     return pred_labels,correct_labels,accuracy
 
 def main(test_input_dir,model_dir,test_upper_bound,result_save_dir):
+    logger.info("Seed: {}".format(SEED))
+
     #Create a dataloader.
     logger.info("Create test dataloader from {}.".format(test_input_dir))
     test_dataset=create_dataset(test_input_dir,num_examples=-1,num_options=20)
