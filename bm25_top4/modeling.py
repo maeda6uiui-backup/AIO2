@@ -139,7 +139,7 @@ def calc_score(mecab,question,option,count_dir,nqis,ignores,k1=1.6,b=0.75,delta=
 
     return score
 
-def create_train_dataset(mecab,examples,count_dir,nqis,ignores,dataset):
+def create_train_dataset(mecab,examples,count_dir,nqis,ignores,dataset,dataset_save_dir):
     num_examples=len(dataset)
 
     input_ids=torch.empty(num_examples,4,512,dtype=torch.long).to(device)
@@ -177,6 +177,19 @@ def create_train_dataset(mecab,examples,count_dir,nqis,ignores,dataset):
             input_ids[i,j+1]=data[0][top_3_indices[j]]
             attention_mask[i,j+1]=data[1][top_3_indices[j]]
             token_type_ids[i,j+1]=data[2][top_3_indices[j]]
+
+    #Save the train dataset.
+    logger.info("Save train dataset to {}.".format(dataset_save_dir))
+    os.makedirs(dataset_save_dir,exist_ok=True)
+
+    input_ids_filepath=os.path.join(dataset_save_dir,"input_ids.pt")
+    attention_mask_filepath=os.path.join(dataset_save_dir,"attention_mask.pt")
+    token_type_ids_filepath=os.path.join(dataset_save_dir,"token_type_ids.pt")
+    labels_filepath=os.path.join(dataset_save_dir,"labels.pt")
+    torch.save(input_ids,input_ids_filepath)
+    torch.save(attention_mask,attention_mask_filepath)
+    torch.save(token_type_ids,token_type_ids_filepath)
+    torch.save(labels,labels_filepath)
 
     return TensorDataset(input_ids,attention_mask,token_type_ids,labels)
 
@@ -269,7 +282,8 @@ def main(
     batch_size,num_epochs,
     lr,train_input_dir,dev1_input_dir,
     train_example_filepath,dev1_example_filepath,
-    count_dir,nqis_filepath,ignores_filepath,result_save_dir):
+    count_dir,nqis_filepath,ignores_filepath,
+    train_dataset_save_dir,result_save_dir):
     logger.info("seed: {}".format(SEED))
     logger.info("batch_size: {} num_epochs: {} lr: {}".format(batch_size,num_epochs,lr))
 
@@ -307,11 +321,35 @@ def main(
     train_examples=load_examples(train_example_filepath)
     dev1_examples=load_examples(dev1_example_filepath)
 
-    #Create a dataloader for training.
-    logger.info("Create train dataloader from {}.".format(train_input_dir))
-    train_dataset=create_dataset(train_input_dir,num_examples=-1,num_options=20)
-    train_dataset=create_train_dataset(mecab,train_examples,count_dir,nqis,ignores,train_dataset)
+    logger.info("Start creating train dataloader.")
+    if os.path.exists(train_dataset_save_dir):
+        logger.info("Load data from {}.".format(train_dataset_save_dir))
+
+        input_ids_filepath=os.path.join(train_dataset_save_dir,"input_ids.pt")
+        attention_mask_filepath=os.path.join(train_dataset_save_dir,"attention_mask.pt")
+        token_type_ids_filepath=os.path.join(train_dataset_save_dir,"token_type_ids.pt")
+        labels_filepath=os.path.join(train_dataset_save_dir,"labels.pt")
+
+        input_ids=torch.load(input_ids_filepath,map_location=device)
+        attention_mask=torch.load(attention_mask_filepath,map_location=device)
+        token_type_ids=torch.load(token_type_ids_filepath,map_location=device)
+        labels=torch.load(labels_filepath,map_location=device)
+
+        train_dataset=TensorDataset(input_ids,attention_mask,token_type_ids,labels)
+    else:
+        logger.info("Create train dataset from {}.".format(train_input_dir))
+
+        train_dataset=create_dataset(train_input_dir,num_examples=-1,num_options=20)
+        train_dataset=create_train_dataset(
+            mecab,train_examples,
+            count_dir,nqis,ignores,
+            train_dataset,train_dataset_save_dir
+        )
+
     train_dataloader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True,drop_last=True)
+
+    #Create a directory to save the results in.
+    os.makedirs(result_save_dir,exist_ok=True)
 
     #Create an optimizer and a scheduler.
     optimizer=AdamW(classifier_model.parameters(),lr=lr,eps=1e-8)
@@ -319,9 +357,6 @@ def main(
     scheduler = get_linear_schedule_with_warmup(
         optimizer, num_warmup_steps=0, num_training_steps=total_steps
     )
-
-    #Create a directory to save the results in.
-    os.makedirs(result_save_dir,exist_ok=True)
 
     logger.info("Start model training.")
     for epoch in range(num_epochs):
@@ -365,6 +400,7 @@ if __name__=="__main__":
     parser.add_argument("--count_dir",type=str)
     parser.add_argument("--nqis_filepath",type=str)
     parser.add_argument("--ignores_filepath",type=str)
+    parser.add_argument("--train_dataset_save_dir",type=str,default="./OutputDir")
     parser.add_argument("--result_save_dir",type=str,default="./OutputDir")
 
     args=parser.parse_args()
@@ -380,5 +416,6 @@ if __name__=="__main__":
         args.count_dir,
         args.nqis_filepath,
         args.ignores_filepath,
+        args.train_dataset_save_dir,
         args.result_save_dir
     )

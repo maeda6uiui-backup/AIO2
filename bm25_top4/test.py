@@ -145,8 +145,8 @@ def simple_accuracy(pred_labels, correct_labels):
 def evaluate(classifier_model,dataloader,examples,mecab,count_dir,nqis,ignores):
     classifier_model.eval()
 
-    preds = None
-    correct_labels = None
+    pred_labels=[]
+    correct_labels=[]
     for batch_idx,batch in tqdm(enumerate(dataloader),total=len(dataloader)):
         with torch.no_grad():
             batch = tuple(t for t in batch)
@@ -158,11 +158,12 @@ def evaluate(classifier_model,dataloader,examples,mecab,count_dir,nqis,ignores):
                 "labels": batch[3].to(device)
             }
 
-            classifier_outputs=classifier_model(**bert_inputs)
-            logits=classifier_outputs[1]
-            logits=logits.detach().cpu().numpy()
+            #Use top 4 options.
+            input_ids=torch.empty(batch_size,4,512,dtype=torch.long).to(device)
+            attention_mask=torch.empty(batch_size,4,512,dtype=torch.long).to(device)
+            token_type_ids=torch.empty(batch_size,4,512,dtype=torch.long).to(device)
+            top_4_indices=np.empty((batch_size,4),dtype=np.int64)
 
-            sorted_logits=np.sort(logits,axis=1)
             example_indices=batch[4].to(device)
             for i in range(batch_size):
                 example_index=example_indices[i]
@@ -172,20 +173,33 @@ def evaluate(classifier_model,dataloader,examples,mecab,count_dir,nqis,ignores):
                 for j in range(20):
                     score=calc_score(mecab,example.question,example.endings[j],count_dir,nqis,ignores)
                     scores[j]=score
-                
-                logits[i]*=scores
+            
+                batch_top_4_indices=(-scores).argsort()[:4]
+                top_4_indices[i]=batch_top_4_indices
+                for j in range(4):
+                    input_ids[i,j]=bert_inputs["input_ids"][i,batch_top_4_indices[j]]
+                    attention_mask[i,j]=bert_inputs["attention_mask"][i,batch_top_4_indices[j]]
+                    token_type_ids[i,j]=bert_inputs["token_type_ids"][i,batch_top_4_indices[j]]
 
-            if preds is None:
-                preds = logits
-                correct_labels = bert_inputs["labels"].detach().cpu().numpy()
-            else:
-                preds = np.append(preds, logits, axis=0)
-                correct_labels = np.append(
-                    correct_labels, bert_inputs["labels"].detach().cpu().numpy(), axis=0
-                )
+            top_bert_inputs={
+                "input_ids":input_ids,
+                "attention_mask":attention_mask,
+                "token_type_ids":token_type_ids,
+                #"labels":bert_inputs["labels"]
+            }
 
-    pred_labels = np.argmax(preds, axis=1)
-    accuracy = simple_accuracy(pred_labels, correct_labels)
+            classifier_outputs=classifier_model(**top_bert_inputs)
+            logits=classifier_outputs[0]
+            logits=logits.detach().cpu().numpy()
+
+            batch_pred_labels=np.argmax(logits,axis=1)
+            for i,label in enumerate(batch_pred_labels):
+                pred_labels.append(top_4_indices[i,label])
+
+            for i in range(batch_size):
+                correct_labels.append(bert_inputs["labels"][i])
+
+    accuracy = simple_accuracy(np.array(pred_labels), np.array(correct_labels))
 
     return pred_labels,correct_labels,accuracy
 
