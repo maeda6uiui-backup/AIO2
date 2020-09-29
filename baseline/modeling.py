@@ -65,6 +65,7 @@ def train(classifier_model,optimizer,scheduler,dataloader):
         loss=classifier_outputs[0]
         # Backward propagation
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(classifier_model.parameters(),1.0)
         # Update parameters
         optimizer.step()
         scheduler.step()
@@ -176,7 +177,7 @@ if __name__=="__main__":
     parser.add_argument("--lr",type=float,default=5e-5)
     parser.add_argument("--train_input_dir",type=str,default="~/EncodedTextTohoku/Train")
     parser.add_argument("--dev1_input_dir",type=str,default="~/EncodedTextTohoku/Dev1")
-    parser.add_argument("--result_save_dir",type=str,default="./OutputDir/Baseline")
+    parser.add_argument("--result_save_dir",type=str,default="./OutputDir")
 
     args=parser.parse_args()
 
