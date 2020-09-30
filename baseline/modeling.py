@@ -45,9 +45,11 @@ def create_dataset(input_dir,num_examples=-1,num_options=4):
 
 def train(classifier_model,optimizer,scheduler,dataloader,gradient_accumulation_steps):
     classifier_model.train()
+    classifier_model.zero_grad()
 
     count_steps=0
     total_loss=0
+    logging_loss=0
 
     for batch_idx,batch in enumerate(dataloader):
         batch = tuple(t for t in batch)
@@ -58,8 +60,6 @@ def train(classifier_model,optimizer,scheduler,dataloader,gradient_accumulation_
             "labels": batch[3].to(device)
         }
 
-        # Initialize gradiants
-        classifier_model.zero_grad()
         # Forward propagation
         classifier_outputs=classifier_model(**bert_inputs)
         loss=classifier_outputs[0]
@@ -69,17 +69,22 @@ def train(classifier_model,optimizer,scheduler,dataloader,gradient_accumulation_
 
         loss.backward()
         torch.nn.utils.clip_grad_norm_(classifier_model.parameters(),1.0)
-        # Update parameters
-        optimizer.step()
-        if batch_idx%gradient_accumulation_steps==0:
-            scheduler.step()
 
         count_steps+=1
         total_loss+=loss.item()
 
-        if batch_idx%100==0:
+        if (batch_idx+1)%100==0:
             logger.info("Step: {}\tLoss: {}\tlr: {}".format(
-                batch_idx,loss.item(),optimizer.param_groups[0]["lr"]))
+                batch_idx,(total_loss-logging_loss)/100,optimizer.param_groups[0]["lr"]))
+            logging_loss=total_loss
+
+        # Update parameters
+        if (batch_idx+1)%gradient_accumulation_steps!=0:
+            continue
+
+        optimizer.step()
+        scheduler.step()
+        classifier_model.zero_grad()
 
     return total_loss/count_steps
 
