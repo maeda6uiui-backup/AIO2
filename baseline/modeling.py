@@ -47,6 +47,8 @@ def train(classifier_model,optimizer,scheduler,dataloader,gradient_accumulation_
     classifier_model.train()
     classifier_model.zero_grad()
 
+    logging_steps=100
+
     count_steps=0
     total_loss=0
     logging_loss=0
@@ -73,9 +75,9 @@ def train(classifier_model,optimizer,scheduler,dataloader,gradient_accumulation_
         count_steps+=1
         total_loss+=loss.item()
 
-        if (batch_idx+1)%100==0:
+        if (batch_idx+1)%logging_steps==0:
             logger.info("Step: {}\tLoss: {}\tlr: {}".format(
-                batch_idx,(total_loss-logging_loss)/100,optimizer.param_groups[0]["lr"]))
+                batch_idx,(total_loss-logging_loss)/logging_steps,optimizer.param_groups[0]["lr"]))
             logging_loss=total_loss
 
         # Update parameters
