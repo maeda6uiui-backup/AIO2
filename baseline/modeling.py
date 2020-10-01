@@ -75,9 +75,12 @@ def train(classifier_model,optimizer,scheduler,dataloader,gradient_accumulation_
         count_steps+=1
         total_loss+=loss.item()
 
-        if (batch_idx+1)%logging_steps==0:
-            logger.info("Step: {}\tLoss: {}\tlr: {}".format(
-                batch_idx,(total_loss-logging_loss)/logging_steps,optimizer.param_groups[0]["lr"]))
+        if batch_idx!=0 and batch_idx%logging_steps==0:
+            logger.info("Step: {}\tLoss: {}\tlr: [{},{}]".format(
+                batch_idx,
+                (total_loss-logging_loss)/logging_steps,
+                optimizer.param_groups[0]["lr"],
+                optimizer.param_groups[1]["lr"]))
             logging_loss=total_loss
 
         # Update parameters
@@ -130,9 +133,8 @@ def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,result_save_dir
     logger.info("batch_size: {} num_epochs: {} lr: {}".format(batch_size,num_epochs,lr))
 
     #Create dataloaders.
-    logger.info("Create train dataloader from {}.".format(train_input_dir))
+    logger.info("Create train dataset from {}.".format(train_input_dir))
     train_dataset=create_dataset(train_input_dir,num_examples=-1,num_options=4)
-    train_dataloader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True,drop_last=True)
 
     logger.info("Create dev1 dataloader from {}.".format(dev1_input_dir))
     dev1_dataset=create_dataset(dev1_input_dir,num_examples=-1,num_options=20)
@@ -145,7 +147,8 @@ def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,result_save_dir
 
     #Create an optimizer and a scheduler.
     gradient_accumulation_steps=8
-    total_steps = len(train_dataloader)//gradient_accumulation_steps*num_epochs
+    num_iterations=len(train_dataset)//batch_size
+    total_steps = num_iterations//gradient_accumulation_steps*num_epochs
 
     no_decay = ["bias", "LayerNorm.weight"]
     weight_decay=0.0
@@ -179,6 +182,7 @@ def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,result_save_dir
     for epoch in range(num_epochs):
         logger.info("===== Epoch {}/{} =====".format(epoch+1,num_epochs))
 
+        train_dataloader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True,drop_last=True)
         mean_loss=train(classifier_model,optimizer,scheduler,train_dataloader,gradient_accumulation_steps)
         logger.info("Mean loss: {}".format(mean_loss))
 
