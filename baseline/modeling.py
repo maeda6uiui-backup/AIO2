@@ -43,15 +43,13 @@ def create_dataset(input_dir,num_examples=-1,num_options=4):
 
     return TensorDataset(input_ids,attention_mask,token_type_ids,labels)
 
-def train(classifier_model,optimizer,scheduler,dataloader,gradient_accumulation_steps):
+def train(classifier_model,optimizer,scheduler,dataloader):
     classifier_model.train()
-    classifier_model.zero_grad()
 
     logging_steps=100
 
     count_steps=0
     total_loss=0
-    logging_loss=0
 
     for batch_idx,batch in enumerate(dataloader):
         batch = tuple(t for t in batch)
@@ -62,34 +60,22 @@ def train(classifier_model,optimizer,scheduler,dataloader,gradient_accumulation_
             "labels": batch[3].to(device)
         }
 
+        classifier_model.zero_grad()
         # Forward propagation
         classifier_outputs=classifier_model(**bert_inputs)
         loss=classifier_outputs[0]
-        # Backward propagation
-        if gradient_accumulation_steps>1:
-            loss = loss / gradient_accumulation_steps
-
+        #Backward propagation
         loss.backward()
         torch.nn.utils.clip_grad_norm_(classifier_model.parameters(),1.0)
+        #Update parameters
+        optimizer.step()
+        scheduler.step()
 
         count_steps+=1
         total_loss+=loss.item()
 
-        if batch_idx!=0 and batch_idx%logging_steps==0:
-            logger.info("Step: {}\tLoss: {}\tlr: [{},{}]".format(
-                batch_idx,
-                (total_loss-logging_loss)/logging_steps,
-                optimizer.param_groups[0]["lr"],
-                optimizer.param_groups[1]["lr"]))
-            logging_loss=total_loss
-
-        # Update parameters
-        if (batch_idx+1)%gradient_accumulation_steps!=0:
-            continue
-
-        optimizer.step()
-        scheduler.step()
-        classifier_model.zero_grad()
+        if batch_idx%logging_steps==0:
+            logger.info("Step: {}\tLoss: {}\tlr: {}".format(batch_idx,loss.item(),optimizer.param_groups[0]["lr"]))
 
     return total_loss/count_steps
 
@@ -146,31 +132,10 @@ def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,result_save_dir
     classifier_model.to(device)
 
     #Create an optimizer and a scheduler.
-    gradient_accumulation_steps=8
     num_iterations=len(train_dataset)//batch_size
-    total_steps = num_iterations//gradient_accumulation_steps*num_epochs
+    total_steps = num_iterations*num_epochs
 
-    no_decay = ["bias", "LayerNorm.weight"]
-    weight_decay=0.0
-    optimizer_grouped_parameters = [
-        {
-            "params": [
-                p
-                for n, p in classifier_model.named_parameters()
-                if not any(nd in n for nd in no_decay)
-            ],
-            "weight_decay": weight_decay,
-        },
-        {
-            "params": [
-                p
-                for n, p in classifier_model.named_parameters()
-                if any(nd in n for nd in no_decay)
-            ],
-            "weight_decay": 0.0,
-        },
-    ]
-    optimizer=AdamW(optimizer_grouped_parameters,lr=lr,eps=1e-8)
+    optimizer=AdamW(classifier_model.parameters(),lr=lr,eps=1e-8)
     scheduler = get_linear_schedule_with_warmup(
         optimizer, num_warmup_steps=0, num_training_steps=total_steps
     )
@@ -183,7 +148,7 @@ def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,result_save_dir
         logger.info("===== Epoch {}/{} =====".format(epoch+1,num_epochs))
 
         train_dataloader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True,drop_last=True)
-        mean_loss=train(classifier_model,optimizer,scheduler,train_dataloader,gradient_accumulation_steps)
+        mean_loss=train(classifier_model,optimizer,scheduler,train_dataloader)
         logger.info("Mean loss: {}".format(mean_loss))
 
         #Save model parameters.
