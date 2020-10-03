@@ -209,7 +209,7 @@ def main(test_input_dir,im_embeddings_dir,model_dir,test_upper_bound,result_save
     #Create a dataloader.
     logger.info("Create a test dataloader from {}.".format(test_input_dir))
     test_dataset=create_dataset(test_input_dir,num_examples=-1,num_options=20)
-    test_dataloader=DataLoader(test_dataset,batch_size=4,shuffle=False,drop_last=True)
+    test_dataloader=DataLoader(test_dataset,batch_size=4,shuffle=False,drop_last=False)
 
     #Load a pre-trained BERT model.
     logger.info("Load a pre-trained BERT model.")
@@ -254,9 +254,9 @@ if __name__=="__main__":
 
     parser.add_argument("--test_input_dir",type=str,default="~/EncodedTextTohoku/Dev2")
     parser.add_argument("--im_embeddings_dir",type=str,default="~/VGG16Embeddings")
-    parser.add_argument("--model_dir",type=str,default="./OutputDir/ImageBERT")
+    parser.add_argument("--model_dir",type=str,default="./OutputDir")
     parser.add_argument("--test_upper_bound",type=int,default=20)
-    parser.add_argument("--result_save_dir",type=str,default="./OutputDir/ImageBERT")
+    parser.add_argument("--result_save_dir",type=str,default="./OutputDir")
 
     args=parser.parse_args()
 

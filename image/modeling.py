@@ -174,7 +174,7 @@ def train(bert_model,bfmc_model,options,im_embeddings_dir,optimizer,scheduler,da
         }
 
         # Initialize gradiants
-        optimizer.zero_grad()
+        bfmc_model.zero_grad()
         # Forward propagation
         outputs = bfmc_model(**bfmc_inputs)
         loss = outputs[0]
@@ -184,8 +184,6 @@ def train(bert_model,bfmc_model,options,im_embeddings_dir,optimizer,scheduler,da
         # Update parameters
         optimizer.step()
         scheduler.step()
-
-        bfmc_model.zero_grad()
 
         if batch_idx%100==0:
             logger.info("Step: {}\tLoss: {}\tlr: {}".format(
@@ -261,11 +259,11 @@ def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,im_embeddings_d
     #Create dataloaders.
     logger.info("Create train dataloader from {}.".format(train_input_dir))
     train_dataset=create_dataset(train_input_dir,num_examples=-1,num_options=4)
-    train_dataloader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True,drop_last=True)
+    train_dataloader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True,drop_last=False)
 
     logger.info("Create dev1 dataloader from {}.".format(dev1_input_dir))
     dev1_dataset=create_dataset(dev1_input_dir,num_examples=-1,num_options=20)
-    dev1_dataloader=DataLoader(dev1_dataset,batch_size=4,shuffle=False,drop_last=True)
+    dev1_dataloader=DataLoader(dev1_dataset,batch_size=4,shuffle=False,drop_last=False)
 
     #Load a pre-trained BERT model.
     logger.info("Load a pre-trained BERT model.")
@@ -322,7 +320,7 @@ if __name__=="__main__":
     parser.add_argument("--train_input_dir",type=str,default="~/EncodedTextTohoku/Train")
     parser.add_argument("--dev1_input_dir",type=str,default="~/EncodedTextTohoku/Dev1")
     parser.add_argument("--im_embeddings_dir",type=str,default="~/VGG16Embeddings")
-    parser.add_argument("--result_save_dir",type=str,default="./OutputDir/ImageBERT")
+    parser.add_argument("--result_save_dir",type=str,default="./OutputDir")
 
     args=parser.parse_args()
 
