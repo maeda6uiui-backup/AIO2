@@ -85,7 +85,7 @@ def main(test_input_dir,model_dir,test_upper_bound,result_save_dir):
     #Create a dataloader.
     logger.info("Create test dataloader from {}.".format(test_input_dir))
     test_dataset=create_dataset(test_input_dir,num_examples=-1,num_options=20)
-    test_dataloader=DataLoader(test_dataset,batch_size=4,shuffle=False,drop_last=True)
+    test_dataloader=DataLoader(test_dataset,batch_size=4,shuffle=False,drop_last=False)
 
     #Create a classifier model.
     logger.info("Create a classifier model.")

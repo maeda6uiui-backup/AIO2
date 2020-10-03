@@ -124,7 +124,7 @@ def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,result_save_dir
 
     logger.info("Create dev1 dataloader from {}.".format(dev1_input_dir))
     dev1_dataset=create_dataset(dev1_input_dir,num_examples=-1,num_options=20)
-    dev1_dataloader=DataLoader(dev1_dataset,batch_size=4,shuffle=False,drop_last=True)
+    dev1_dataloader=DataLoader(dev1_dataset,batch_size=4,shuffle=False,drop_last=False)
 
     #Create a classifier model.
     logger.info("Create a classifier model.")
@@ -147,7 +147,7 @@ def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,result_save_dir
     for epoch in range(num_epochs):
         logger.info("===== Epoch {}/{} =====".format(epoch+1,num_epochs))
 
-        train_dataloader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True,drop_last=True)
+        train_dataloader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True,drop_last=False)
         mean_loss=train(classifier_model,optimizer,scheduler,train_dataloader)
         logger.info("Mean loss: {}".format(mean_loss))
 
