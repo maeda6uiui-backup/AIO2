@@ -249,6 +249,7 @@ def evaluate(bert_model,bfmc_model,options,im_embeddings_dir,dataloader):
     return pred_labels,correct_labels,accuracy
 
 def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,im_embeddings_dir,result_save_dir):
+    logger.info("Seed: {}".format(SEED))
     logger.info("batch_size: {} num_epochs: {} lr: {}".format(batch_size,num_epochs,lr))
 
     #Load lists of options.
@@ -257,9 +258,8 @@ def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,im_embeddings_d
     dev1_options=load_options_list(os.path.join(dev1_input_dir,"options_list.txt"))
 
     #Create dataloaders.
-    logger.info("Create train dataloader from {}.".format(train_input_dir))
+    logger.info("Create train dataset from {}.".format(train_input_dir))
     train_dataset=create_dataset(train_input_dir,num_examples=-1,num_options=4)
-    train_dataloader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True,drop_last=False)
 
     logger.info("Create dev1 dataloader from {}.".format(dev1_input_dir))
     dev1_dataset=create_dataset(dev1_input_dir,num_examples=-1,num_options=20)
@@ -276,8 +276,10 @@ def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,im_embeddings_d
     bfmc_model.to(device)
 
     #Create an optimizer and a scheduler.
+    num_iterations=len(train_dataset)//batch_size
+    total_steps = num_iterations*num_epochs
+
     optimizer=AdamW(bfmc_model.parameters(),lr=lr,eps=1e-8)
-    total_steps = len(train_dataloader) * num_epochs
     scheduler = get_linear_schedule_with_warmup(
         optimizer, num_warmup_steps=0, num_training_steps=total_steps
     )
@@ -289,6 +291,7 @@ def main(batch_size,num_epochs,lr,train_input_dir,dev1_input_dir,im_embeddings_d
     for epoch in range(num_epochs):
         logger.info("===== Epoch {}/{} =====".format(epoch+1,num_epochs))
 
+        train_dataloader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True,drop_last=False)
         train(bert_model,bfmc_model,train_options,im_embeddings_dir,optimizer,scheduler,train_dataloader)
         pred_labels,correct_labels,accuracy=evaluate(bert_model,bfmc_model,dev1_options,im_embeddings_dir,dev1_dataloader)
 

@@ -202,6 +202,8 @@ def evaluate(bert_model,bfmc_model,options,im_embeddings_dir,dataloader):
     return pred_labels,correct_labels,accuracy
 
 def main(test_input_dir,im_embeddings_dir,model_dir,test_upper_bound,result_save_dir):
+    logger.info("Seed: {}".format(SEED))
+
     #Load a list of options.
     logger.info("Load a list of options.")
     test_options=load_options_list(os.path.join(test_input_dir,"options_list.txt"))
