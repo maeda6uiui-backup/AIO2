@@ -67,8 +67,8 @@ def get_region_features(raw_images,predictor):
     
     return features
 
-def create_image_embeddings(image_root_dir,article_list_filepath,embeddings_save_dir,predictor):
-    os.makedirs(embeddings_save_dir,exist_ok=True)
+def create_image_embeddings(image_root_dir,article_list_filepath,embed_save_dir,predictor):
+    os.makedirs(embed_save_dir,exist_ok=True)
 
     df=pd.read_csv(article_list_filepath,encoding="utf_8",sep="\t")
     for row in tqdm(df.values):
@@ -86,11 +86,11 @@ def create_image_embeddings(image_root_dir,article_list_filepath,embeddings_save
         features=get_region_features(images,predictor)
 
         article_hash=hashing.get_md5_hash(article_name)
-        save_filepath=os.path.join(embeddings_save_dir,article_hash+".pt")
+        save_filepath=os.path.join(embed_save_dir,article_hash+".pt")
 
         torch.save(features,save_filepath)
 
-def main(image_root_dir,article_list_filepath,model_name,embeddings_save_dir):
+def main(image_root_dir,article_list_filepath,model_name,embed_save_dir):
     logger.info("Creating a DefaultPredictor.")
     cfg=get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file(model_name))
@@ -100,7 +100,7 @@ def main(image_root_dir,article_list_filepath,model_name,embeddings_save_dir):
     predictor=DefaultPredictor(cfg)
     
     logger.info("Start creating image embeddings.")
-    create_image_embeddings(image_root_dir,article_list_filepath,embeddings_save_dir,predictor)
+    create_image_embeddings(image_root_dir,article_list_filepath,embed_save_dir,predictor)
     logger.info("Finished creating image embeddings.")
 
 if __name__=="__main__":
@@ -108,12 +108,12 @@ if __name__=="__main__":
     parser.add_argument("--image_root_dir",type=str,default="~/WikipediaImages/Images")
     parser.add_argument("--article_list_filepath",type=str,default="./article_list.txt")
     parser.add_argument("--model_name",type=str,default="COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml")
-    parser.add_argument("--embeddings_save_dir",type=str,default="~/FasterRCNNEmbeddings/Original")
+    parser.add_argument("--embed_save_dir",type=str,default="~/FasterRCNNEmbeddings/Original")
     args=parser.parse_args()
 
     main(
         args.image_root_dir,
         args.article_list_filepath,
         args.model_name,
-        args.embeddings_save_dir
+        args.embed_save_dir
     )
