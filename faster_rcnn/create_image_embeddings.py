@@ -35,14 +35,20 @@ def get_region_features_single(raw_image,predictor):
         images=predictor.model.preprocess_image(inputs)
 
         model=predictor.model
-        features=model.backbone(images.tensor)
-        proposals,_=model.proposal_generator(images,features)
-        instances,_=model.roi_heads(images,features,proposals)
-        box_features=[features[f] for f in model.roi_heads.in_features]
-        box_features=model.roi_heads.box_pooler(box_features,[x.pred_boxes for x in instances])
-        pooled_features=box_features.mean(dim=[2,3])
 
-        return pooled_features   #(num_regions,dimension)
+        #Extract features from the backbone
+        features=model.backbone(images.tensor)
+        #Generate proposals
+        proposals,_=model.proposal_generator(images,features)
+        #RoI align
+        box_features=model.roi_heads.box_pooler(
+            [features[f] for f in features if f!="p6"],
+            [p.proposal_boxes for p in proposals]
+        )
+        #Get features from fc2
+        box_features=model.roi_heads.box_head(box_features)
+
+        return box_features #(Number of RoIs,1024)
 
 def get_region_features(raw_images,predictor):
     lst=list()
