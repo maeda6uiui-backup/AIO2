@@ -108,7 +108,7 @@ if __name__=="__main__":
     parser.add_argument("--image_root_dir",type=str,default="~/WikipediaImages/Images")
     parser.add_argument("--article_list_filepath",type=str,default="./article_list.txt")
     parser.add_argument("--model_name",type=str,default="COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml")
-    parser.add_argument("--embeddings_save_dir",type=str,default="~/FasterRCNNEmbeddings")
+    parser.add_argument("--embeddings_save_dir",type=str,default="~/FasterRCNNEmbeddings/Original")
     args=parser.parse_args()
 
     main(
