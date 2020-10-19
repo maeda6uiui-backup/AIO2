@@ -40,10 +40,11 @@ def get_region_features_single(raw_image,predictor):
         features=model.backbone(images.tensor)
         #Generate proposals
         proposals,_=model.proposal_generator(images,features)
+        instances,_=model.roi_heads(images,features,proposals)
         #RoI align
         box_features=model.roi_heads.box_pooler(
             [features[f] for f in features if f!="p6"],
-            [p.proposal_boxes for p in proposals]
+            [x.pred_boxes for x in instances]
         )
         #Get features from fc2
         box_features=model.roi_heads.box_head(box_features)
